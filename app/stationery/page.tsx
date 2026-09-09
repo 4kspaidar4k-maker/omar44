@@ -13,7 +13,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export default function StationeryAndProductsPage() {
   const { addToCart, totalItems } = useCart() as any;
