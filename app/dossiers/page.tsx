@@ -1,8 +1,20 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, ShoppingCart, BookOpen, Layers, Calendar, ChevronLeft, Search } from "lucide-react";
+import {
+  ArrowRight,
+  ShoppingCart,
+  BookOpen,
+  Layers,
+  Calendar,
+  ChevronLeft,
+  Search,
+  FileText,
+  Zap,
+  HelpCircle
+} from "lucide-react";
 import { useCart } from "../../context/CartContext";
+import { supabase } from "@/lib/supabase";
 
 export default function DossiersPage() {
   const { addToCart, totalItems } = useCart() as any;
@@ -11,24 +23,44 @@ export default function DossiersPage() {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedDossierType, setSelectedDossierType] = useState<string | null>(null); // النوع: مادة / مكثف / بنك أسئلة
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("abu_touq_dossiers");
-    if (saved) {
-      setDossiersList(JSON.parse(saved));
-    }
+    const fetchDossiers = async () => {
+      try {
+        const { data, error } = await supabase.from("products").select("*");
+        if (error) throw error;
+
+        if (data) {
+          const dossiers = data.filter((item) => item.subject || item.year);
+          setDossiersList(dossiers);
+        }
+      } catch (err) {
+        console.error("خطأ في جلب الدوسيات من قاعدة البيانات:", err);
+      }
+    };
+
+    fetchDossiers();
   }, []);
 
   const handleBack = () => {
-    if (selectedSubject) setSelectedSubject(null);
+    if (selectedDossierType) setSelectedDossierType(null);
+    else if (selectedSubject) setSelectedSubject(null);
     else if (selectedSemester) setSelectedSemester(null);
     else if (selectedYear) setSelectedYear(null);
   };
 
   const semesters = ["الفصل الأول", "الفصل الثاني"];
 
-  // مواد جيل 2010 المحددة بدقة
+  // أنواع الدوسيات المطلوبة
+  const dossierTypes = [
+    { title: "شرح مادة", desc: "الدوسيات الكاملة وتفاصيل المنهج", icon: FileText, color: "text-blue-500" },
+    { title: "مكثف", desc: "مراجعات نهائية ومكثفات سريعة للدروس", icon: Zap, color: "text-amber-500" },
+    { title: "بنك أسئلة", desc: "أسئلة سنوات سابقة ونماذج وزارية مقترحة", icon: HelpCircle, color: "text-emerald-500" },
+  ];
+
+  // مواد جيل 2010
   const subjects2010 = [
     "الرياضيات",
     "اللغة العربية",
@@ -36,7 +68,7 @@ export default function DossiersPage() {
     "تاريخ الأردن"
   ];
 
-  // مواد جيل 2009 المحددة بدقة (مع رياضيات أعمال وجميع العلوم والأدبي)
+  // مواد جيل 2009
   const subjects2009 = [
     "الرياضيات",
     "الرياضيات أعمال",
@@ -53,13 +85,17 @@ export default function DossiersPage() {
 
   const currentSubjects = selectedYear === "2010" ? subjects2010 : subjects2009;
 
-  // فلترة الدوسيات حسب الخيارات وشريط البحث
+  // فلترة الدوسيات حسب الخيارات وشريط البحث والنوع
   const filteredItems = dossiersList.filter((item) => {
     const yearMatch = !selectedYear || item.year === selectedYear;
     const semesterMatch = !selectedSemester || item.semester === selectedSemester;
     const subjectMatch = !selectedSubject || item.subject === selectedSubject;
-    const searchMatch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return yearMatch && semesterMatch && subjectMatch && searchMatch;
+    // التحقق من نوع الدوسية سواء كان محفوظاً في الحقل category أو ضمن عنوان الدوسية
+    const typeMatch = !selectedDossierType || 
+      item.category === selectedDossierType || 
+      (item.title && item.title.includes(selectedDossierType));
+    const searchMatch = item.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    return yearMatch && semesterMatch && subjectMatch && typeMatch && searchMatch;
   });
 
   return (
@@ -96,16 +132,32 @@ export default function DossiersPage() {
         </div>
       </header>
 
-      {/* شريط المسار التعليمي */}
+      {/* شريط المسار التعليمي (Breadcrumbs) */}
       <div className="max-w-5xl mx-auto px-6 pt-6">
         <div className="flex items-center gap-2 text-xs md:text-sm text-slate-500 font-bold overflow-x-auto pb-2">
-          <button onClick={() => { setSelectedYear(null); setSelectedSemester(null); setSelectedSubject(null); setSearchQuery(""); }} className="hover:text-blue-600">
+          <button
+            onClick={() => {
+              setSelectedYear(null);
+              setSelectedSemester(null);
+              setSelectedSubject(null);
+              setSelectedDossierType(null);
+              setSearchQuery("");
+            }}
+            className="hover:text-blue-600"
+          >
             الأجيال
           </button>
           {selectedYear && (
             <>
               <ChevronLeft className="w-4 h-4 text-slate-400" />
-              <button onClick={() => { setSelectedSemester(null); setSelectedSubject(null); }} className="hover:text-blue-600 text-blue-900">
+              <button
+                onClick={() => {
+                  setSelectedSemester(null);
+                  setSelectedSubject(null);
+                  setSelectedDossierType(null);
+                }}
+                className="hover:text-blue-600 text-blue-900"
+              >
                 جيل {selectedYear}
               </button>
             </>
@@ -113,7 +165,13 @@ export default function DossiersPage() {
           {selectedSemester && (
             <>
               <ChevronLeft className="w-4 h-4 text-slate-400" />
-              <button onClick={() => setSelectedSubject(null)} className="hover:text-blue-600 text-blue-900">
+              <button
+                onClick={() => {
+                  setSelectedSubject(null);
+                  setSelectedDossierType(null);
+                }}
+                className="hover:text-blue-600 text-blue-900"
+              >
                 {selectedSemester}
               </button>
             </>
@@ -121,12 +179,23 @@ export default function DossiersPage() {
           {selectedSubject && (
             <>
               <ChevronLeft className="w-4 h-4 text-slate-400" />
-              <span className="text-blue-600">{selectedSubject}</span>
+              <button
+                onClick={() => setSelectedDossierType(null)}
+                className="hover:text-blue-600 text-blue-900"
+              >
+                {selectedSubject}
+              </button>
+            </>
+          )}
+          {selectedDossierType && (
+            <>
+              <ChevronLeft className="w-4 h-4 text-slate-400" />
+              <span className="text-blue-600">{selectedDossierType}</span>
             </>
           )}
         </div>
 
-        {/* شريط البحث المطور في الدوسيات */}
+        {/* شريط البحث المطور */}
         <div className="relative mt-4 mb-2">
           <input
             type="text"
@@ -186,10 +255,12 @@ export default function DossiersPage() {
           </div>
         )}
 
-        {/* الخطوة 3: اختيار المادة الدراسية حسب المواد المحددة لكل جيل */}
+        {/* الخطوة 3: اختيار المادة الدراسية */}
         {selectedYear && selectedSemester && !selectedSubject && (
           <div>
-            <h2 className="text-lg font-black text-blue-950 mb-4">اختر المادة الدراسية ({selectedSemester} - جيل {selectedYear}):</h2>
+            <h2 className="text-lg font-black text-blue-950 mb-4">
+              اختر المادة الدراسية ({selectedSemester} - جيل {selectedYear}):
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {currentSubjects.map((sub) => (
                 <button
@@ -205,18 +276,54 @@ export default function DossiersPage() {
           </div>
         )}
 
-        {/* الخطوة 4: عرض الدوسيات بالطول تماماً مثل شكل الكتاب أو الدوسية الطولية */}
-        {selectedYear && selectedSemester && selectedSubject && (
+        {/* الخطوة 4 (الجديدة): اختيار نوع الدوسية (مادة / مكثف / بنك أسئلة) */}
+        {selectedYear && selectedSemester && selectedSubject && !selectedDossierType && (
+          <div>
+            <h2 className="text-lg font-black text-blue-950 mb-4">
+              اختر نوع المحتوى لمادة {selectedSubject}:
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {dossierTypes.map((type) => {
+                const IconComponent = type.icon;
+                return (
+                  <button
+                    key={type.title}
+                    onClick={() => setSelectedDossierType(type.title)}
+                    className="p-6 bg-white border border-blue-100 hover:border-blue-500 rounded-2xl shadow-sm hover:shadow-md transition text-right flex flex-col justify-between group h-44"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg">
+                        {selectedSubject}
+                      </span>
+                      <IconComponent className={`w-8 h-8 ${type.color} group-hover:scale-110 transition`} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-blue-950 group-hover:text-blue-600 transition">
+                        {type.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">{type.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* الخطوة 5: عرض الدوسيات حسب كل الاختيارات */}
+        {selectedYear && selectedSemester && selectedSubject && selectedDossierType && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-blue-950">
-                {selectedSubject} ({selectedSemester} - جيل {selectedYear}):
+                {selectedSubject} - {selectedDossierType} ({selectedSemester} - جيل {selectedYear}):
               </h2>
             </div>
 
             {filteredItems.length === 0 ? (
-              <div className="bg-white border border-blue-100 rounded-2xl p-8 text-center text-slate-500 shadow-sm">
-                لا توجد دوسيات مضافة لهذه المادة والفصل حالياً. يمكنك إضافتها فوراً من لوحة التحكم!
+              <div className="bg-white border border-blue-100 rounded-2xl p-10 text-center text-slate-500 shadow-sm space-y-2">
+                <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="font-bold text-sm text-slate-700">لا توجد دوسيات من نوع ({selectedDossierType}) مضافة حالياً.</p>
+                <p className="text-xs text-slate-400">يمكنك إضافتها من لوحة التحكم وستظهر هنا فوراً!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -225,7 +332,6 @@ export default function DossiersPage() {
                     key={item.id}
                     className="bg-white border border-blue-100 rounded-2xl overflow-hidden hover:border-blue-400 shadow-sm hover:shadow-md transition flex flex-col h-[420px]"
                   >
-                    {/* صورة الدوسية بشكل طولي ومضبوط */}
                     <div className="relative h-64 bg-slate-100 overflow-hidden flex items-center justify-center">
                       {item.image ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
@@ -233,15 +339,16 @@ export default function DossiersPage() {
                       ) : (
                         <BookOpen className="w-12 h-12 text-blue-300" />
                       )}
+                      <span className="absolute top-2 right-2 bg-blue-950/80 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-1 rounded-md">
+                        {selectedDossierType}
+                      </span>
                     </div>
 
-                    {/* تفاصيل الدوسية */}
                     <div className="p-4 flex-1 flex flex-col justify-between">
                       <h3 className="text-sm font-black text-blue-950 line-clamp-2">{item.title}</h3>
-                      <span className="text-base font-black text-blue-800">{item.price.toFixed(2)} دينار</span>
+                      <span className="text-base font-black text-blue-800">{Number(item.price).toFixed(2)} دينار</span>
                     </div>
 
-                    {/* زر الإضافة للسلة */}
                     <div className="p-3 bg-slate-50 border-t border-slate-100">
                       <button
                         onClick={() => {
