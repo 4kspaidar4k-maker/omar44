@@ -13,8 +13,7 @@ import {
   Zap,
   HelpCircle
 } from "lucide-react";
-import { useCart } from "../../context/CartContext";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export default function DossiersPage() {
   const { addToCart, totalItems } = useCart() as any;
