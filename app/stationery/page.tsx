@@ -1,23 +1,48 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, ShoppingCart, CheckCircle, Search, Gamepad2, PenTool, ChevronLeft } from "lucide-react";
+import {
+  ArrowRight,
+  ShoppingCart,
+  CheckCircle,
+  Search,
+  Gamepad2,
+  PenTool,
+  Wrench,
+  Gift,
+  ChevronLeft,
+} from "lucide-react";
 import { useCart } from "../../context/CartContext";
+import { supabase } from "@/lib/supabase";
 
-export default function StationeryAndGamesPage() {
+export default function StationeryAndProductsPage() {
   const { addToCart, totalItems } = useCart() as any;
   const [products, setProducts] = useState<any[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  
-  // الحالة للتحكم بعرض شاشة الاختيار بين الألعاب أو القرطاسية
-  const [selectedCategory, setSelectedCategory] = useState<"قرطاسية" | "ألعاب" | null>(null);
+
+  // الأقسام الأربعة: قرطاسية، ألعاب، أدوات، هدايا
+  const [selectedCategory, setSelectedCategory] = useState<
+    "قرطاسية" | "ألعاب" | "أدوات" | "هدايا" | null
+  >(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("abu_touq_stationery");
-    if (saved) {
-      setProducts(JSON.parse(saved));
-    }
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase.from("products").select("*");
+        if (error) throw error;
+
+        if (data) {
+          // استبعاد الدوسيات والاحتفاظ بالمنتجات العادية فقط
+          const items = data.filter((item) => !item.subject && !item.year);
+          setProducts(items);
+        }
+      } catch (err) {
+        console.error("خطأ في جلب المنتجات من Supabase:", err);
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   const handleQuantityChange = (id: string, delta: number) => {
@@ -43,10 +68,12 @@ export default function StationeryAndGamesPage() {
     alert("تمت الإضافة إلى السلة بنجاح!");
   };
 
-  // تصفية المنتجات حسب اختيار القسم (قرطاسية أو ألعاب) وحسب البحث
+  // تصفية المنتجات حسب القسم المختار وشريط البحث
   const filteredProducts = products.filter((p) => {
-    const categoryMatch = p.category === selectedCategory || (!p.category && selectedCategory === "قرطاسية");
-    const searchMatch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const categoryMatch =
+      p.category === selectedCategory ||
+      (!p.category && selectedCategory === "قرطاسية");
+    const searchMatch = p.title?.toLowerCase().includes(searchQuery.toLowerCase());
     return categoryMatch && searchMatch;
   });
 
@@ -57,18 +84,26 @@ export default function StationeryAndGamesPage() {
           <div className="flex items-center gap-4">
             {selectedCategory ? (
               <button
-                onClick={() => { setSelectedCategory(null); setSearchQuery(""); }}
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearchQuery("");
+                }}
                 className="p-2 rounded-full hover:bg-slate-100 text-blue-900 transition flex items-center gap-1 font-bold text-sm"
               >
                 <ArrowRight className="w-5 h-5" />
-                <span>رجوع للاختيار</span>
+                <span>رجوع للأقسام</span>
               </button>
             ) : (
-              <Link href="/" className="p-2 rounded-full hover:bg-slate-100 text-blue-900 transition">
+              <Link
+                href="/"
+                className="p-2 rounded-full hover:bg-slate-100 text-blue-900 transition"
+              >
                 <ArrowRight className="w-6 h-6" />
               </Link>
             )}
-            <h1 className="text-xl md:text-2xl font-black text-blue-950">القرطاسية والألعاب</h1>
+            <h1 className="text-xl md:text-2xl font-black text-blue-950">
+              المتجر والأقسام
+            </h1>
           </div>
           <Link
             href="/cart"
@@ -87,53 +122,99 @@ export default function StationeryAndGamesPage() {
       {/* شريط المسار التفاعلي */}
       <div className="max-w-6xl mx-auto px-6 pt-6">
         <div className="flex items-center gap-2 text-xs md:text-sm text-slate-500 font-bold overflow-x-auto pb-2">
-          <button onClick={() => { setSelectedCategory(null); setSearchQuery(""); }} className="hover:text-blue-600">
-            القرطاسية والألعاب
+          <button
+            onClick={() => {
+              setSelectedCategory(null);
+              setSearchQuery("");
+            }}
+            className="hover:text-blue-600"
+          >
+            الأقسام الرئيسية
           </button>
           {selectedCategory && (
             <>
               <ChevronLeft className="w-4 h-4 text-slate-400" />
-              <span className="text-blue-600">{selectedCategory}</span>
+              <span className="text-blue-600 font-black">{selectedCategory}</span>
             </>
           )}
         </div>
       </div>
 
       <main className="max-w-6xl mx-auto px-6 py-6">
-        {/* الخطوة الأولى: شاشة اختيار القسم (قرطاسية أو ألعاب) */}
+        {/* الخطوة الأولى: شاشة اختيار القسم من بين الأقسام الـ 4 */}
         {!selectedCategory ? (
           <div>
-            <h2 className="text-xl font-black text-blue-950 mb-6 text-center">اختر القسم الذي ترغب بتصفحه:</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              
-              {/* زر قسم القرطاسية */}
+            <h2 className="text-xl font-black text-blue-950 mb-6 text-center">
+              اختر القسم الذي ترغب بتصفحه:
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+              {/* قسم القرطاسية */}
               <button
                 onClick={() => setSelectedCategory("قرطاسية")}
-                className="p-8 bg-white border border-blue-100 hover:border-blue-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-60 justify-center"
+                className="p-8 bg-white border border-blue-100 hover:border-blue-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-64 justify-center"
               >
-                <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
                   <PenTool className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-black text-blue-950 group-hover:text-blue-600 transition">القرطاسية</h3>
-                <p className="text-sm text-slate-400 mt-2">أقلام، دفاتر، ومستلزمات مدرسية</p>
+                <h3 className="text-xl font-black text-blue-950 group-hover:text-blue-600 transition">
+                  القرطاسية
+                </h3>
+                <p className="text-xs text-slate-400 mt-2">
+                  أقلام، دفاتر، ومستلزمات مدرسية ومكتبية
+                </p>
               </button>
 
-              {/* زر قسم الألعاب */}
+              {/* قسم الألعاب */}
               <button
                 onClick={() => setSelectedCategory("ألعاب")}
-                className="p-8 bg-white border border-emerald-100 hover:border-emerald-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-60 justify-center"
+                className="p-8 bg-white border border-emerald-100 hover:border-emerald-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-64 justify-center"
               >
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
                   <Gamepad2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-black text-blue-950 group-hover:text-emerald-600 transition">الألعاب</h3>
-                <p className="text-sm text-slate-400 mt-2">ألعاب ترفيهية وتعليمية وهدايا مميزة</p>
+                <h3 className="text-xl font-black text-blue-950 group-hover:text-emerald-600 transition">
+                  الألعاب
+                </h3>
+                <p className="text-xs text-slate-400 mt-2">
+                  ألعاب ذكاء، ترفيه، وألعاب مسلية
+                </p>
               </button>
 
+              {/* قسم الأدوات */}
+              <button
+                onClick={() => setSelectedCategory("أدوات")}
+                className="p-8 bg-white border border-amber-100 hover:border-amber-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-64 justify-center"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                  <Wrench className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-blue-950 group-hover:text-amber-600 transition">
+                  الأدوات
+                </h3>
+                <p className="text-xs text-slate-400 mt-2">
+                  أدوات هندسية، مقصات، ولوازم تقنية
+                </p>
+              </button>
+
+              {/* قسم الهدايا */}
+              <button
+                onClick={() => setSelectedCategory("هدايا")}
+                className="p-8 bg-white border border-purple-100 hover:border-purple-500 rounded-3xl shadow-sm hover:shadow-md transition text-right flex flex-col items-center text-center group h-64 justify-center"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                  <Gift className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-blue-950 group-hover:text-purple-600 transition">
+                  الهدايا
+                </h3>
+                <p className="text-xs text-slate-400 mt-2">
+                  توزيعات، بطاقات تهنئة، وهدايا مميزة
+                </p>
+              </button>
             </div>
           </div>
         ) : (
-          /* الخطوة الثانية: عرض المنتجات وشريط البحث للقسم المختار (قرطاسية أو ألعاب) */
+          /* الخطوة الثانية: عرض المنتجات للقسم المختار */
           <div>
             <div className="relative mb-8 max-w-xl mx-auto">
               <input
@@ -147,10 +228,14 @@ export default function StationeryAndGamesPage() {
             </div>
 
             {filteredProducts.length === 0 ? (
-              <div className="bg-white border border-blue-100 rounded-3xl p-12 text-center shadow-sm max-w-xl mx-auto">
-                <h3 className="text-lg font-black text-blue-950 mb-2">لا توجد منتجات مضافة في قسم {selectedCategory} حالياً</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {searchQuery ? "لا توجد نتائج مطابقة لبحثك." : `اذهب إلى لوحة تحكم الإدارة وأضف منتجات جديدة واختر تصنيف (${selectedCategory}) لتظهر هنا فوراً.`}
+              <div className="bg-white border border-blue-100 rounded-3xl p-12 text-center shadow-sm max-w-xl mx-auto space-y-3">
+                <h3 className="text-lg font-black text-blue-950">
+                  لا توجد منتجات مضافة في قسم {selectedCategory} حالياً
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {searchQuery
+                    ? "لا توجد نتائج مطابقة لبحثك."
+                    : `يمكنك إضافة منتجات جديدة من لوحة التحكم واختيار قسم (${selectedCategory}) لتظهر هنا فوراً.`}
                 </p>
               </div>
             ) : (
@@ -164,17 +249,26 @@ export default function StationeryAndGamesPage() {
                     >
                       <div className="relative h-56 bg-slate-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                        <img
+                          src={product.image}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
                         <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-white/90 border border-slate-200 shadow-sm">
-                          <CheckCircle className="w-3 h-3 text-emerald-600" /> <span className="text-emerald-700">متوفر</span>
+                          <CheckCircle className="w-3 h-3 text-emerald-600" />{" "}
+                          <span className="text-emerald-700">متوفر</span>
                         </div>
                       </div>
 
                       <div className="p-5 flex flex-col flex-1">
-                        <h3 className="text-lg font-bold text-blue-950 mb-4">{product.title}</h3>
-                        
+                        <h3 className="text-lg font-bold text-blue-950 mb-4 line-clamp-1">
+                          {product.title}
+                        </h3>
+
                         <div className="mt-auto flex items-center justify-between mb-4">
-                          <span className="text-xl font-black text-blue-800">{product.price.toFixed(2)} دينار</span>
+                          <span className="text-xl font-black text-blue-800">
+                            {Number(product.price).toFixed(2)} دينار
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -182,12 +276,18 @@ export default function StationeryAndGamesPage() {
                             <button
                               onClick={() => handleQuantityChange(product.id, -1)}
                               className="px-3 text-slate-600 hover:bg-slate-200 font-bold"
-                            >-</button>
-                            <span className="w-8 text-center font-bold text-sm text-blue-950">{qty}</span>
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-bold text-sm text-blue-950">
+                              {qty}
+                            </span>
                             <button
                               onClick={() => handleQuantityChange(product.id, 1)}
                               className="px-3 text-slate-600 hover:bg-slate-200 font-bold"
-                            >+</button>
+                            >
+                              +
+                            </button>
                           </div>
 
                           <button
