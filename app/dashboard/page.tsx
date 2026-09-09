@@ -22,6 +22,8 @@ import {
   FileText,
   Zap,
   HelpCircle,
+  Wrench,
+  Gift,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -90,10 +92,10 @@ export default function DashboardPage() {
   const [semester, setSemester] = useState("الفصل الأول");
   const [subject, setSubject] = useState("الرياضيات");
   const [dossierType, setDossierType] = useState<"شرح مادة" | "مكثف" | "بنك أسئلة">("شرح مادة");
-  const [categoryType, setCategoryType] = useState<"قرطاسية" | "ألعاب">("قرطاسية");
+  // الأقسام الأربعة: قرطاسية، ألعاب، أدوات، هدايا
+  const [categoryType, setCategoryType] = useState<"قرطاسية" | "ألعاب" | "أدوات" | "هدايا">("قرطاسية");
   const [imagePreview, setImagePreview] = useState("");
 
-  // تغيير المادة الافتراضية عند تبديل الجيل
   const handleYearChange = (newYear: string) => {
     setYear(newYear);
     if (newYear === "2010") {
@@ -294,7 +296,7 @@ export default function DashboardPage() {
             }`}
           >
             <ShoppingBag className="w-5 h-5" />
-            <span>القرطاسية والألعاب</span>
+            <span>المنتجات والأقسام</span>
           </button>
         </div>
       </div>
@@ -447,20 +449,20 @@ export default function DashboardPage() {
             <div className="bg-white border border-blue-100 rounded-3xl p-6 shadow-sm h-fit">
               <h2 className="text-lg font-black text-blue-950 mb-4 flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-blue-600" />
-                {activeTab === "dossiers" ? "إضافة دوسية جديدة" : "إضافة منتج (قرطاسية أو ألعاب)"}
+                {activeTab === "dossiers" ? "إضافة دوسية جديدة" : "إضافة منتج جديد"}
               </h2>
 
               <form onSubmit={handleAddItem} className="space-y-4">
                 {activeTab === "stationery" && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">اختر القسم لوضع المنتج فيه</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-2">اختر القسم لوضع المنتج فيه</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setCategoryType("قرطاسية")}
                         className={`p-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
                           categoryType === "قرطاسية"
-                            ? "bg-blue-600 text-white border-blue-600"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
                             : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                         }`}
                       >
@@ -473,12 +475,38 @@ export default function DashboardPage() {
                         onClick={() => setCategoryType("ألعاب")}
                         className={`p-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
                           categoryType === "ألعاب"
-                            ? "bg-emerald-600 text-white border-emerald-600"
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                             : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                         }`}
                       >
                         <Gamepad2 className="w-4 h-4" />
                         <span>ألعاب</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCategoryType("أدوات")}
+                        className={`p-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                          categoryType === "أدوات"
+                            ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <Wrench className="w-4 h-4" />
+                        <span>أدوات</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCategoryType("هدايا")}
+                        className={`p-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                          categoryType === "هدايا"
+                            ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <Gift className="w-4 h-4" />
+                        <span>هدايا</span>
                       </button>
                     </div>
                   </div>
@@ -537,7 +565,7 @@ export default function DashboardPage() {
                   <input
                     required
                     type="text"
-                    placeholder={activeTab === "dossiers" ? "مثال: دوسية الوافي في الرياضيات، مكثف القمة..." : "اكتب اسم المنتج..."}
+                    placeholder={activeTab === "dossiers" ? "مثال: دوسية الوافي في الرياضيات..." : "اكتب اسم المنتج أو الهدية أو الأداة..."}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 outline-none focus:border-blue-600"
@@ -621,7 +649,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-white border border-blue-100 rounded-3xl p-6 shadow-sm">
                 <h2 className="text-lg font-black text-blue-950 mb-4">
-                  {activeTab === "dossiers" ? `قائمة الدوسيات (${dossiers.length})` : `قائمة القرطاسية والألعاب (${stationery.length})`}
+                  {activeTab === "dossiers" ? `قائمة الدوسيات (${dossiers.length})` : `قائمة المنتجات والأقسام (${stationery.length})`}
                 </h2>
 
                 {(activeTab === "dossiers" ? dossiers : stationery).length === 0 ? (
@@ -635,11 +663,14 @@ export default function DashboardPage() {
                           <img src={item.image} alt={item.title} className="w-14 h-14 object-cover rounded-xl" />
                           <div>
                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                              {/* نوع الدوسية أو قسم القرطاسية */}
                               {item.category && (
                                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                                   item.category === "ألعاب" 
                                     ? "bg-emerald-100 text-emerald-800" 
+                                    : item.category === "أدوات"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : item.category === "هدايا"
+                                    ? "bg-purple-100 text-purple-800"
                                     : item.category === "مكثف"
                                     ? "bg-amber-100 text-amber-900 border border-amber-300 font-black"
                                     : item.category === "بنك أسئلة"
