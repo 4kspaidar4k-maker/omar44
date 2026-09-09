@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, BookOpen, Bot, PhoneCall, ShoppingCart } from "lucide-react";
+import { ShoppingBag, BookOpen, Bot, PhoneCall, ShoppingCart, Lock } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
 export default function HomePage() {
@@ -16,11 +16,36 @@ export default function HomePage() {
   }, []);
 
   const navItems = [
-    { title: "أدوات والعاب وقرطاسية", desc: "أقلام، دفاتر، ومستلزمات مدرسية ومكتبية", href: "/stationery", icon: ShoppingBag },
-    { title: "دوسيات ", desc: "أحدث الدوسيات والبطاقات المعتمدة", href: "/dossiers", icon: BookOpen },
-    { title: "استفسار عند الذكاء الاصطناعي", desc: "إجابات فورية ودقيقة عن التوفر والأسعار", href: "/ai-chat", icon: Bot },
-    { title: "اتصال وشكاوى", desc: "نحن هنا لخدمتك ومتابعة ملاحظاتك", href: "/contact", icon: PhoneCall },
-    { title: "سلة الطلبات", desc: "مراجعة العناصر وإتمام عملية التوصيل", href: "/cart", icon: ShoppingCart },
+    {
+      title: "قرطاسية، ألعاب، أدوات، هدايا",
+      desc: "تصفح مستلزمات المدرسة، الألعاب، الأدوات التقنية، والهدايا المميزة",
+      href: "/stationery",
+      icon: ShoppingBag,
+    },
+    {
+      title: "قسم الدوسيات والبطاقات",
+      desc: "أحدث الدوسيات والبطاقات المعتمدة لجيل 2009 وجيل 2010",
+      href: "/dossiers",
+      icon: BookOpen,
+    },
+    {
+      title: "استفسار عند الذكاء الاصطناعي",
+      desc: "إجابات فورية ودقيقة عن التوفر والأسعار والمناهج",
+      href: "/ai-chat",
+      icon: Bot,
+    },
+    {
+      title: "اتصال وشكاوى",
+      desc: "نحن هنا لخدمتك ومتابعة ملاحظاتك واستفساراتك",
+      href: "/contact",
+      icon: PhoneCall,
+    },
+    {
+      title: "سلة الطلبات",
+      desc: "مراجعة العناصر وإتمام عملية التوصيل المباشر",
+      href: "/cart",
+      icon: ShoppingCart,
+    },
   ];
 
   return (
@@ -98,7 +123,7 @@ export default function HomePage() {
       {/* المحتوى الرئيسي */}
       <main className="max-w-6xl mx-auto px-6 py-12 flex-1 w-full">
         
-        {/* قسم البانر العلوي (صورة واحدة وشرح المكتبة المتخصصة) */}
+        {/* قسم البانر العلوي */}
         <div className="bg-white border border-blue-100 rounded-3xl p-6 sm:p-8 shadow-sm mb-12 flex flex-col md:flex-row items-center gap-8">
           <div className="w-full md:w-1/3 flex justify-center">
             <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-slate-100">
@@ -117,7 +142,7 @@ export default function HomePage() {
               مكتبة أبو طوق التعليمية
             </h2>
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
-              مكتبة أبو طوق متخصصة في بيع الدوسيات، الألعاب، والقرطاسية المدرسية والمكتبية بأفضل الأسعار وأعلى جودة. نوفر لكم كل ما تحتاجه المسيرة التعليمية لضمان التفوق والتميز، مع خدمات توصيل سريعة ومضمونة لجميع الطلبات.
+              مكتبة أبو طوق متخصصة في بيع الدوسيات المعتمدة، الألعاب التعليمية والترفيهية، القرطاسية المدرسية، الأدوات المتنوعة، والهدايا بأفضل الأسعار وأعلى جودة. نوفر لكم كل ما تحتاجه المسيرة التعليمية لضمان التفوق والتميز مع خدمة توصيل سريعة ومضمونة لكافة الطلبات.
             </p>
           </div>
         </div>
@@ -160,9 +185,16 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* الفوتر بالأسفل */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs font-bold text-slate-500 shadow-inner">
-        <p>© 2026 مكتبة أبو طوق - جميع الحقوق محفوظة</p>
+      {/* الفوتر بالأسفل مع رابط لوحة الإدارة */}
+      <footer className="border-t border-slate-200 bg-white py-6 px-6 text-center text-xs font-bold text-slate-500 shadow-inner flex flex-col sm:flex-row items-center justify-between max-w-6xl mx-auto w-full gap-4">
+        <p>©️ 2026 مكتبة أبو طوق - جميع الحقوق محفوظة</p>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-1.5 text-slate-400 hover:text-blue-600 transition"
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>لوحة تحكم الإدارة</span>
+        </Link>
       </footer>
     </div>
   );
