@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 import {
   ArrowRight,
   PlusCircle,
@@ -31,14 +32,27 @@ export default function DashboardPage() {
   const [stationery, setStationery] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
 
-  const loadData = () => {
-    const savedDossiers = localStorage.getItem("abu_touq_dossiers");
-    const savedStationery = localStorage.getItem("abu_touq_stationery");
-    const savedOrders = localStorage.getItem("abu_touq_orders");
+  const loadData = async () => {
+    try {
+      const { data: productsData, error: prodError } = await supabase.from("products").select("*");
+      if (prodError) throw prodError;
 
-    if (savedDossiers) setDossiers(JSON.parse(savedDossiers));
-    if (savedStationery) setStationery(JSON.parse(savedStationery));
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
+      if (productsData) {
+        const dossiersList = productsData.filter((item) => item.subject || item.year);
+        const stationeryList = productsData.filter((item) => !item.subject && !item.year);
+        setDossiers(dossiersList);
+        setStationery(stationeryList);
+      }
+
+      const { data: ordersData, error: ordError } = await supabase.from("orders").select("*");
+      if (ordError) throw ordError;
+
+      if (ordersData) {
+        setOrders(ordersData);
+      }
+    } catch (err) {
+      console.error("خطأ في جلب البيانات من Supabase:", err);
+    }
   };
 
   useEffect(() => {
@@ -72,7 +86,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !price) return;
 
@@ -80,59 +94,77 @@ export default function DashboardPage() {
       id: Date.now().toString(),
       title,
       price: parseFloat(price),
-      year: activeTab === "dossiers" ? year : undefined,
-      semester: activeTab === "dossiers" ? semester : undefined,
-      subject: activeTab === "dossiers" ? subject : undefined,
-      category: activeTab === "stationery" ? categoryType : undefined,
+      year: activeTab === "dossiers" ? year : null,
+      semester: activeTab === "dossiers" ? semester : null,
+      subject: activeTab === "dossiers" ? subject : null,
+      category: activeTab === "stationery" ? categoryType : null,
       image:
         imagePreview ||
         "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=500&auto=format&fit=crop",
     };
 
+    const { error } = await supabase.from("products").insert([newItem]);
+    if (error) {
+      alert("حدث خطأ أثناء الحفظ في قاعدة البيانات!");
+      console.error(error);
+      return;
+    }
+
     if (activeTab === "dossiers") {
-      const updated = [newItem, ...dossiers];
-      setDossiers(updated);
-      localStorage.setItem("abu_touq_dossiers", JSON.stringify(updated));
-    } else if (activeTab === "stationery") {
-      const updated = [newItem, ...stationery];
-      setStationery(updated);
-      localStorage.setItem("abu_touq_stationery", JSON.stringify(updated));
+      setDossiers([newItem, ...dossiers]);
+    } else {
+      setStationery([newItem, ...stationery]);
     }
 
     setTitle("");
     setPrice("");
     setImagePreview("");
-    alert("تم الحفظ بنجاح في المتجر!");
+    alert("تم الحفظ بنجاح في قاعدة البيانات!");
   };
 
-  const handleDelete = (id: string, type: "dossiers" | "stationery") => {
+  const handleDelete = async (id: string, type: "dossiers" | "stationery") => {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) {
+      alert("فشل الحذف من قاعدة البيانات");
+      return;
+    }
+
     if (type === "dossiers") {
-      const updated = dossiers.filter((item) => item.id !== id);
-      setDossiers(updated);
-      localStorage.setItem("abu_touq_dossiers", JSON.stringify(updated));
+      setDossiers(dossiers.filter((item) => item.id !== id));
     } else {
-      const updated = stationery.filter((item) => item.id !== id);
-      setStationery(updated);
-      localStorage.setItem("abu_touq_stationery", JSON.stringify(updated));
+      setStationery(stationery.filter((item) => item.id !== id));
     }
   };
 
-  const handleMarkAsReceived = (orderId: string) => {
-    const updated = orders.map((order) => {
-      if (order.id === orderId) {
-        return { ...order, status: "تم استلام الطلب وتجهيزه" };
-      }
-      return order;
-    });
-    setOrders(updated);
-    localStorage.setItem("abu_touq_orders", JSON.stringify(updated));
+  const handleMarkAsReceived = async (orderId: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "تم استلام الطلب وتجهيزه" })
+      .eq("id", orderId);
+
+    if (error) {
+      alert("فشل تحديث حالة الطلب");
+      return;
+    }
+
+    setOrders(
+      orders.map((order) => {
+        if (order.id === orderId) {
+          return { ...order, status: "تم استلام الطلب وتجهيزه" };
+        }
+        return order;
+      })
+    );
   };
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrder = async (orderId: string) => {
     if (confirm("هل أنت متأكد من مسح هذا الطلب نهائياً بعد تسليمه للزبون؟")) {
-      const updated = orders.filter((o) => o.id !== orderId);
-      setOrders(updated);
-      localStorage.setItem("abu_touq_orders", JSON.stringify(updated));
+      const { error } = await supabase.from("orders").delete().eq("id", orderId);
+      if (error) {
+        alert("فشل حذف الطلب من قاعدة البيانات");
+        return;
+      }
+      setOrders(orders.filter((o) => o.id !== orderId));
     }
   };
 
@@ -178,7 +210,7 @@ export default function DashboardPage() {
             <Link href="/" className="p-2 rounded-full hover:bg-slate-100 text-blue-900 transition">
               <ArrowRight className="w-6 h-6" />
             </Link>
-            <h1 className="text-xl md:text-2xl font-black text-blue-950">إدارة مكتبة أبو طوق</h1>
+            <h1 className="text-xl md:text-2xl font-black text-blue-950">إدارة مكتبة أبو طوق (قاعدة البيانات)</h1>
           </div>
           <button
             onClick={() => setIsAuthenticated(false)}
@@ -324,11 +356,11 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        {order.mapLink && (
+                        {order.map_link && (
                           <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between">
                             <span className="text-xs font-bold text-amber-900">إحداثيات الـ GPS:</span>
                             <a
-                              href={order.mapLink}
+                              href={order.map_link}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl transition shadow-sm"
@@ -343,7 +375,7 @@ export default function DashboardPage() {
                       <div>
                         <h4 className="text-xs font-black text-slate-500 mb-2">المنتجات المطلوبة:</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                          {order.items?.map((item: any, i: number) => (
+                          {Array.isArray(order.items) && order.items.map((item: any, i: number) => (
                             <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={item.image} alt={item.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
@@ -533,7 +565,7 @@ export default function DashboardPage() {
                               )}
                             </div>
                             <h3 className="font-bold text-blue-950 text-sm">{item.title}</h3>
-                            <p className="text-xs text-blue-700 font-bold mt-0.5">{item.price.toFixed(2)} دينار</p>
+                            <p className="text-xs text-blue-700 font-bold mt-0.5">{Number(item.price).toFixed(2)} دينار</p>
                           </div>
                         </div>
 
