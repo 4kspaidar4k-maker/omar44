@@ -19,6 +19,9 @@ import {
   Gamepad2,
   Clock,
   CheckCircle2,
+  FileText,
+  Zap,
+  HelpCircle,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -31,6 +34,28 @@ export default function DashboardPage() {
   const [dossiers, setDossiers] = useState<any[]>([]);
   const [stationery, setStationery] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+
+  // قوائم المواد المحددة لكل جيل
+  const subjects2010 = [
+    "الرياضيات",
+    "اللغة العربية",
+    "التربية الإسلامية",
+    "تاريخ الأردن"
+  ];
+
+  const subjects2009 = [
+    "الرياضيات",
+    "الرياضيات أعمال",
+    "اللغة العربية",
+    "اللغة الإنجليزية",
+    "التربية الإسلامية",
+    "تاريخ الأردن",
+    "الكيمياء",
+    "الفيزياء",
+    "الأحياء",
+    "علوم الأرض",
+    "علم النفس"
+  ];
 
   const loadData = async () => {
     try {
@@ -64,8 +89,19 @@ export default function DashboardPage() {
   const [year, setYear] = useState("2010");
   const [semester, setSemester] = useState("الفصل الأول");
   const [subject, setSubject] = useState("الرياضيات");
+  const [dossierType, setDossierType] = useState<"شرح مادة" | "مكثف" | "بنك أسئلة">("شرح مادة");
   const [categoryType, setCategoryType] = useState<"قرطاسية" | "ألعاب">("قرطاسية");
   const [imagePreview, setImagePreview] = useState("");
+
+  // تغيير المادة الافتراضية عند تبديل الجيل
+  const handleYearChange = (newYear: string) => {
+    setYear(newYear);
+    if (newYear === "2010") {
+      setSubject(subjects2010[0]);
+    } else {
+      setSubject(subjects2009[0]);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +133,7 @@ export default function DashboardPage() {
       year: activeTab === "dossiers" ? year : null,
       semester: activeTab === "dossiers" ? semester : null,
       subject: activeTab === "dossiers" ? subject : null,
-      category: activeTab === "stationery" ? categoryType : null,
+      category: activeTab === "dossiers" ? dossierType : categoryType,
       image:
         imagePreview ||
         "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=500&auto=format&fit=crop",
@@ -201,6 +237,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const currentSubjectsList = year === "2010" ? subjects2010 : subjects2009;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -409,7 +447,7 @@ export default function DashboardPage() {
             <div className="bg-white border border-blue-100 rounded-3xl p-6 shadow-sm h-fit">
               <h2 className="text-lg font-black text-blue-950 mb-4 flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-blue-600" />
-                {activeTab === "dossiers" ? "إضافة دوسية" : "إضافة منتج (قرطاسية أو ألعاب)"}
+                {activeTab === "dossiers" ? "إضافة دوسية جديدة" : "إضافة منتج (قرطاسية أو ألعاب)"}
               </h2>
 
               <form onSubmit={handleAddItem} className="space-y-4">
@@ -446,12 +484,60 @@ export default function DashboardPage() {
                   </div>
                 )}
 
+                {activeTab === "dossiers" && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">نوع المحتوى (الدوسية)</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setDossierType("شرح مادة")}
+                        className={`p-2 rounded-xl border text-[11px] font-black flex flex-col items-center gap-1 transition ${
+                          dossierType === "شرح مادة"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>شرح مادة</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDossierType("مكثف")}
+                        className={`p-2 rounded-xl border text-[11px] font-black flex flex-col items-center gap-1 transition ${
+                          dossierType === "مكثف"
+                            ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>مكثف</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDossierType("بنك أسئلة")}
+                        className={`p-2 rounded-xl border text-[11px] font-black flex flex-col items-center gap-1 transition ${
+                          dossierType === "بنك أسئلة"
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        <span>بنك أسئلة</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">اسم العنصر</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">
+                    {activeTab === "dossiers" ? "اسم / عنوان الدوسية" : "اسم العنصر"}
+                  </label>
                   <input
                     required
                     type="text"
-                    placeholder="اكتب اسم المنتج أو اللعبة..."
+                    placeholder={activeTab === "dossiers" ? "مثال: دوسية الوافي في الرياضيات، مكثف القمة..." : "اكتب اسم المنتج..."}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 outline-none focus:border-blue-600"
@@ -478,7 +564,7 @@ export default function DashboardPage() {
                         <label className="block text-xs font-bold text-slate-600 mb-1">الجيل</label>
                         <select
                           value={year}
-                          onChange={(e) => setYear(e.target.value)}
+                          onChange={(e) => handleYearChange(e.target.value)}
                           className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900"
                         >
                           <option value="2010">جيل 2010</option>
@@ -500,17 +586,17 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">المادة</label>
+                      <label className="block text-xs font-bold text-slate-600 mb-1">المادة ({year})</label>
                       <select
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900"
                       >
-                        <option value="الرياضيات">الرياضيات</option>
-                        <option value="اللغة العربية">اللغة العربية</option>
-                        <option value="اللغة الإنجليزية">اللغة الإنجليزية</option>
-                        <option value="التربية الإسلامية">التربية الإسلامية</option>
-                        <option value="تاريخ الأردن">تاريخ الأردن</option>
+                        {currentSubjectsList.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </>
@@ -548,19 +634,26 @@ export default function DashboardPage() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={item.image} alt={item.title} className="w-14 h-14 object-cover rounded-xl" />
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                              {/* نوع الدوسية أو قسم القرطاسية */}
                               {item.category && (
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                                  item.category === "ألعاب" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                                  item.category === "ألعاب" 
+                                    ? "bg-emerald-100 text-emerald-800" 
+                                    : item.category === "مكثف"
+                                    ? "bg-amber-100 text-amber-900 border border-amber-300 font-black"
+                                    : item.category === "بنك أسئلة"
+                                    ? "bg-teal-100 text-teal-900 border border-teal-300 font-black"
+                                    : "bg-blue-100 text-blue-800"
                                 }`}>
                                   {item.category}
                                 </span>
                               )}
                               {item.year && (
                                 <>
-                                  <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">جيل {item.year}</span>
-                                  <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">{item.semester}</span>
-                                  <span className="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{item.subject}</span>
+                                  <span className="text-[11px] font-bold bg-blue-50 text-blue-900 px-2 py-0.5 rounded">جيل {item.year}</span>
+                                  <span className="text-[11px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{item.semester}</span>
+                                  <span className="text-[11px] font-bold bg-blue-900 text-white px-2 py-0.5 rounded">{item.subject}</span>
                                 </>
                               )}
                             </div>
